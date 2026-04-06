@@ -1,0 +1,2069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopCalc Pro — Daily Shop Calculator</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Font Awesome -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- html2canvas for print -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+  :root {
+    --bg-main: #f5f0e8;
+    --bg-sidebar: #0d1117;
+    --bg-card: #ffffff;
+    --bg-card-alt: #faf8f4;
+    --accent: #c8962e;
+    --accent-light: #f0d68a;
+    --accent-dark: #8a6510;
+    --text-dark: #1a1a1a;
+    --text-muted: #6b7280;
+    --text-light: #e8e2d6;
+    --border: #e5ddd0;
+    --success: #16a34a;
+    --danger: #dc2626;
+    --info: #2563eb;
+    --warning: #d97706;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg-main);
+    color: var(--text-dark);
+    margin: 0;
+    overflow-x: hidden;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 80% 20%, rgba(200,150,46,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 20% 80%, rgba(200,150,46,0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ===== SIDEBAR ===== */
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0;
+    width: 260px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    border-right: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .sidebar-brand {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .sidebar-brand h2 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: 1.5rem;
+    color: var(--accent);
+    margin: 0;
+    letter-spacing: -0.5px;
+  }
+
+  .sidebar-brand small {
+    color: rgba(255,255,255,0.35);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 500;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 16px 12px;
+    overflow-y: auto;
+  }
+
+  .nav-label {
+    color: rgba(255,255,255,0.25);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 16px 12px 8px;
+    font-weight: 600;
+  }
+
+  .sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    color: rgba(255,255,255,0.55);
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    margin-bottom: 2px;
+    position: relative;
+  }
+
+  .sidebar-nav a:hover {
+    color: rgba(255,255,255,0.9);
+    background: rgba(255,255,255,0.05);
+  }
+
+  .sidebar-nav a.active {
+    color: var(--accent);
+    background: rgba(200,150,46,0.12);
+  }
+
+  .sidebar-nav a.active::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 50%;
+    transform: translateY(-50%);
+    width: 3px; height: 20px;
+    background: var(--accent);
+    border-radius: 0 3px 3px 0;
+  }
+
+  .sidebar-nav a i {
+    width: 20px;
+    text-align: center;
+    font-size: 0.95rem;
+  }
+
+  .sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .sidebar-footer .shop-info {
+    color: rgba(255,255,255,0.4);
+    font-size: 0.78rem;
+  }
+
+  .sidebar-footer .shop-info strong {
+    color: rgba(255,255,255,0.7);
+    display: block;
+    font-size: 0.85rem;
+  }
+
+  /* ===== MAIN CONTENT ===== */
+  .main-content {
+    margin-left: 260px;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Top Bar */
+  .top-bar {
+    background: rgba(245,240,232,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .top-bar .page-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 1.35rem;
+    color: var(--text-dark);
+  }
+
+  .top-bar .date-display {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mobile-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    color: var(--text-dark);
+    cursor: pointer;
+  }
+
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+  }
+
+  /* Page Sections */
+  .page-section {
+    display: none;
+    padding: 28px 32px 48px;
+    animation: fadeUp 0.4s ease;
+  }
+
+  .page-section.active { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== CARDS ===== */
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .stat-card.gold::after { background: linear-gradient(90deg, var(--accent), var(--accent-light)); }
+  .stat-card.green::after { background: linear-gradient(90deg, #16a34a, #4ade80); }
+  .stat-card.red::after { background: linear-gradient(90deg, #dc2626, #f87171); }
+  .stat-card.blue::after { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+
+  .stat-card .stat-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    margin-bottom: 14px;
+  }
+
+  .stat-card.gold .stat-icon { background: rgba(200,150,46,0.12); color: var(--accent); }
+  .stat-card.green .stat-icon { background: rgba(22,163,74,0.1); color: #16a34a; }
+  .stat-card.red .stat-icon { background: rgba(220,38,38,0.1); color: #dc2626; }
+  .stat-card.blue .stat-icon { background: rgba(37,99,235,0.1); color: #2563eb; }
+
+  .stat-card .stat-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .stat-card .stat-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.7rem;
+    font-weight: 900;
+    color: var(--text-dark);
+    line-height: 1.1;
+  }
+
+  .stat-card .stat-sub {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+
+  /* Panel Card */
+  .panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-card-alt);
+  }
+
+  .panel-header h5 {
+    font-weight: 700;
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  .panel-body { padding: 24px; }
+
+  /* ===== FORMS ===== */
+  .form-control, .form-select {
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+    background: var(--bg-card);
+  }
+
+  .form-control:focus, .form-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(200,150,46,0.15);
+  }
+
+  .form-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+  }
+
+  /* ===== BUTTONS ===== */
+  .btn-accent {
+    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 22px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.25s;
+    box-shadow: 0 2px 8px rgba(200,150,46,0.3);
+  }
+
+  .btn-accent:hover {
+    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(200,150,46,0.4);
+  }
+
+  .btn-outline-custom {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--text-dark);
+    border-radius: 10px;
+    padding: 10px 22px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .btn-outline-custom:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(200,150,46,0.05);
+  }
+
+  .btn-danger-custom {
+    background: rgba(220,38,38,0.08);
+    color: #dc2626;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .btn-danger-custom:hover {
+    background: #dc2626;
+    color: #fff;
+  }
+
+  /* ===== TABLES ===== */
+  .table-custom {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .table-custom thead th {
+    background: var(--bg-card-alt);
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-weight: 700;
+    padding: 12px 16px;
+    border-bottom: 1.5px solid var(--border);
+  }
+
+  .table-custom tbody td {
+    padding: 14px 16px;
+    font-size: 0.88rem;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+    vertical-align: middle;
+  }
+
+  .table-custom tbody tr {
+    transition: background 0.15s;
+  }
+
+  .table-custom tbody tr:hover {
+    background: rgba(200,150,46,0.03);
+  }
+
+  .table-custom tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* ===== BADGES ===== */
+  .badge-category {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  /* ===== TOAST ===== */
+  .toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .custom-toast {
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideIn 0.35s ease;
+    min-width: 280px;
+    color: #fff;
+  }
+
+  .custom-toast.success { background: #16a34a; }
+  .custom-toast.error { background: #dc2626; }
+  .custom-toast.info { background: #2563eb; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(40px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ===== EMPTY STATE ===== */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-muted);
+  }
+
+  .empty-state i {
+    font-size: 2.5rem;
+    margin-bottom: 16px;
+    opacity: 0.3;
+  }
+
+  .empty-state p {
+    font-size: 0.9rem;
+  }
+
+  /* ===== MODAL CUSTOM ===== */
+  .modal-content {
+    border: none;
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .modal-header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px;
+  }
+
+  .modal-body { padding: 24px; }
+  .modal-footer { border-top: 1px solid var(--border); padding: 16px 24px; }
+
+  /* ===== SALE ITEM ROW ===== */
+  .sale-item-row {
+    display: flex;
+    gap: 10px;
+    align-items: end;
+    margin-bottom: 10px;
+    animation: fadeUp 0.25s ease;
+  }
+
+  .sale-item-row .form-group { flex: 1; }
+
+  /* ===== CHART CONTAINERS ===== */
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    max-height: 300px;
+  }
+
+  /* ===== PRINT STYLES ===== */
+  .print-report {
+    background: #fff;
+    padding: 40px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .print-report h2 {
+    font-family: 'Playfair Display', serif;
+    text-align: center;
+    margin-bottom: 4px;
+  }
+
+  .print-report .print-date {
+    text-align: center;
+    color: #888;
+    margin-bottom: 24px;
+    font-size: 0.85rem;
+  }
+
+  .print-report table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+
+  .print-report th, .print-report td {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    font-size: 0.85rem;
+  }
+
+  .print-report th {
+    background: #f5f5f5;
+    font-weight: 600;
+  }
+
+  .print-report .total-row {
+    font-weight: 700;
+    background: #faf8f4;
+  }
+
+  .print-divider {
+    border: none;
+    border-top: 2px solid var(--accent);
+    margin: 20px 0;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 991px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .sidebar-overlay.show {
+      display: block;
+    }
+    .main-content {
+      margin-left: 0;
+    }
+    .mobile-toggle {
+      display: block;
+    }
+    .page-section {
+      padding: 20px 16px 40px;
+    }
+    .top-bar {
+      padding: 12px 16px;
+    }
+    .sale-item-row {
+      flex-wrap: wrap;
+    }
+    .sale-item-row .form-group {
+      min-width: calc(50% - 5px);
+    }
+  }
+
+  @media (max-width: 576px) {
+    .sale-item-row .form-group {
+      min-width: 100%;
+    }
+    .stat-card .stat-value {
+      font-size: 1.35rem;
+    }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+
+  /* Number animation pulse */
+  .pulse-once {
+    animation: pulseOnce 0.4s ease;
+  }
+
+  @keyframes pulseOnce {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+    100% { transform: scale(1); }
+  }
+
+  /* Floating particles */
+  .particles-bg {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .particle {
+    position: absolute;
+    width: 4px; height: 4px;
+    background: var(--accent);
+    border-radius: 50%;
+    opacity: 0;
+    animation: floatParticle linear infinite;
+  }
+
+  @keyframes floatParticle {
+    0% { opacity: 0; transform: translateY(100vh) scale(0); }
+    10% { opacity: 0.15; }
+    90% { opacity: 0.15; }
+    100% { opacity: 0; transform: translateY(-10vh) scale(1); }
+  }
+
+  /* Profit indicator */
+  .profit-positive { color: #16a34a; }
+  .profit-negative { color: #dc2626; }
+</style>
+</head>
+<body>
+
+<!-- Floating Particles Background -->
+<div class="particles-bg" id="particlesBg"></div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Sidebar Overlay for Mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <h2>ShopCalc</h2>
+    <small>Daily Manager</small>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">Main</div>
+    <a href="#" class="active" data-page="dashboard">
+      <i class="fas fa-th-large"></i> Dashboard
+    </a>
+    <a href="#" data-page="sales">
+      <i class="fas fa-cash-register"></i> New Sale
+    </a>
+    <a href="#" data-page="expenses">
+      <i class="fas fa-receipt"></i> Expenses
+    </a>
+    <div class="nav-label">Manage</div>
+    <a href="#" data-page="products">
+      <i class="fas fa-boxes-stacked"></i> Products
+    </a>
+    <a href="#" data-page="history">
+      <i class="fas fa-clock-rotate-left"></i> History
+    </a>
+    <div class="nav-label">Reports</div>
+    <a href="#" data-page="report">
+      <i class="fas fa-file-invoice-dollar"></i> Daily Report
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="shop-info">
+      <strong id="shopNameFooter">My General Store</strong>
+      <span id="shopFooterDate"></span>
+    </div>
+  </div>
+</aside>
+
+<!-- ===== MAIN CONTENT ===== -->
+<div class="main-content">
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="d-flex align-items-center gap-3">
+      <button class="mobile-toggle" id="mobileToggle">
+        <i class="fas fa-bars"></i>
+      </button>
+      <span class="page-title" id="pageTitle">Dashboard</span>
+    </div>
+    <div class="date-display">
+      <i class="far fa-calendar"></i>
+      <span id="currentDate"></span>
+    </div>
+  </div>
+
+  <!-- ========== DASHBOARD ========== -->
+  <section class="page-section active" id="page-dashboard">
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-lg-3">
+        <div class="stat-card gold">
+          <div class="stat-icon"><i class="fas fa-coins"></i></div>
+          <div class="stat-label">Today's Sales</div>
+          <div class="stat-value" id="dashSales">0</div>
+          <div class="stat-sub" id="dashSalesCount">0 transactions</div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card red">
+          <div class="stat-icon"><i class="fas fa-arrow-trend-down"></i></div>
+          <div class="stat-label">Today's Expenses</div>
+          <div class="stat-value" id="dashExpenses">0</div>
+          <div class="stat-sub" id="dashExpCount">0 entries</div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card green">
+          <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+          <div class="stat-label">Net Profit</div>
+          <div class="stat-value" id="dashProfit">0</div>
+          <div class="stat-sub" id="dashProfitPct">--</div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card blue">
+          <div class="stat-icon"><i class="fas fa-bag-shopping"></i></div>
+          <div class="stat-label">Items Sold</div>
+          <div class="stat-value" id="dashItems">0</div>
+          <div class="stat-sub" id="dashProducts">0 products tracked</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4">
+      <div class="col-lg-8">
+        <div class="panel">
+          <div class="panel-header">
+            <h5><i class="fas fa-chart-bar me-2" style="color:var(--accent)"></i>Weekly Overview</h5>
+          </div>
+          <div class="panel-body">
+            <div class="chart-wrap"><canvas id="weeklyChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="panel">
+          <div class="panel-header">
+            <h5><i class="fas fa-chart-pie me-2" style="color:var(--accent)"></i>Sales by Category</h5>
+          </div>
+          <div class="panel-body">
+            <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="panel">
+      <div class="panel-header">
+        <h5><i class="fas fa-list me-2" style="color:var(--accent)"></i>Recent Transactions</h5>
+        <a href="#" class="btn btn-outline-custom btn-sm" onclick="navigateTo('history');return false;">View All</a>
+      </div>
+      <div class="panel-body p-0">
+        <div class="table-responsive">
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="dashRecentTable">
+              <tr><td colspan="4"><div class="empty-state"><i class="fas fa-inbox d-block"></i><p>No transactions today</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== NEW SALE ========== -->
+  <section class="page-section" id="page-sales">
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="panel">
+          <div class="panel-header">
+            <h5><i class="fas fa-plus-circle me-2" style="color:var(--accent)"></i>Add Sale Items</h5>
+            <button class="btn btn-outline-custom btn-sm" id="addSaleRowBtn">
+              <i class="fas fa-plus me-1"></i>Add Item
+            </button>
+          </div>
+          <div class="panel-body">
+            <div id="saleItemsContainer">
+              <div class="sale-item-row">
+                <div class="form-group">
+                  <label class="form-label">Product</label>
+                  <select class="form-select sale-product">
+                    <option value="">Select product...</option>
+                  </select>
+                </div>
+                <div class="form-group" style="max-width:100px">
+                  <label class="form-label">Qty</label>
+                  <input type="number" class="form-control sale-qty" min="1" value="1" placeholder="0">
+                </div>
+                <div class="form-group" style="max-width:130px">
+                  <label class="form-label">Price</label>
+                  <input type="number" class="form-control sale-price" min="0" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-group" style="max-width:120px">
+                  <label class="form-label">Total</label>
+                  <input type="text" class="form-control sale-total" readonly value="0.00" style="background:var(--bg-card-alt);font-weight:600">
+                </div>
+                <div class="form-group" style="max-width:40px">
+                  <label class="form-label">&nbsp;</label>
+                  <button class="btn btn-danger-custom w-100 remove-sale-row" title="Remove"><i class="fas fa-times"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="panel" style="position:sticky;top:80px;">
+          <div class="panel-header">
+            <h5><i class="fas fa-calculator me-2" style="color:var(--accent)"></i>Summary</h5>
+          </div>
+          <div class="panel-body">
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted" style="font-size:0.85rem">Subtotal</span>
+              <span id="saleSubtotal" style="font-weight:600">0.00</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted" style="font-size:0.85rem">Discount</span>
+              <div style="max-width:100px">
+                <input type="number" class="form-control form-control-sm sale-discount" value="0" min="0" step="0.01" id="saleDiscount">
+              </div>
+            </div>
+            <hr style="border-color:var(--border)">
+            <div class="d-flex justify-content-between mb-3">
+              <span style="font-weight:700;font-size:1.05rem">Grand Total</span>
+              <span id="saleGrandTotal" style="font-family:'Playfair Display',serif;font-weight:900;font-size:1.35rem;color:var(--accent)">0.00</span>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Customer Name (Optional)</label>
+              <input type="text" class="form-control" id="saleCustomer" placeholder="Walk-in customer">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Payment Method</label>
+              <select class="form-select" id="salePayment">
+                <option value="Cash">Cash</option>
+                <option value="Card">Card</option>
+                <option value="UPI">UPI</option>
+                <option value="Credit">Credit</option>
+              </select>
+            </div>
+            <button class="btn btn-accent w-100 py-3" id="saveSaleBtn">
+              <i class="fas fa-check me-2"></i>Complete Sale
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== EXPENSES ========== -->
+  <section class="page-section" id="page-expenses">
+    <div class="row g-4">
+      <div class="col-lg-5">
+        <div class="panel" style="position:sticky;top:80px;">
+          <div class="panel-header">
+            <h5><i class="fas fa-plus-circle me-2" style="color:var(--accent)"></i>Add Expense</h5>
+          </div>
+          <div class="panel-body">
+            <div class="mb-3">
+              <label class="form-label">Description</label>
+              <input type="text" class="form-control" id="expDesc" placeholder="e.g. Electricity bill">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Amount</label>
+              <input type="number" class="form-control" id="expAmount" min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Category</label>
+              <select class="form-select" id="expCategory">
+                <option value="Rent">Rent</option>
+                <option value="Utilities">Utilities</option>
+                <option value="Supplies">Supplies</option>
+                <option value="Transport">Transport</option>
+                <option value="Salary">Salary</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <button class="btn btn-accent w-100 py-3" id="saveExpBtn">
+              <i class="fas fa-check me-2"></i>Add Expense
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-7">
+        <div class="panel">
+          <div class="panel-header">
+            <h5><i class="fas fa-list me-2" style="color:var(--accent)"></i>Today's Expenses</h5>
+            <span class="badge bg-secondary" id="expCountBadge">0</span>
+          </div>
+          <div class="panel-body p-0">
+            <div class="table-responsive">
+              <table class="table-custom">
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Time</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="expTableBody">
+                  <tr><td colspan="5"><div class="empty-state"><i class="fas fa-receipt d-block"></i><p>No expenses recorded today</p></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PRODUCTS ========== -->
+  <section class="page-section" id="page-products">
+    <div class="row g-4">
+      <div class="col-lg-4">
+        <div class="panel" style="position:sticky;top:80px;">
+          <div class="panel-header">
+            <h5><i class="fas fa-box me-2" style="color:var(--accent)"></i>Add Product</h5>
+          </div>
+          <div class="panel-body">
+            <div class="mb-3">
+              <label class="form-label">Product Name</label>
+              <input type="text" class="form-control" id="prodName" placeholder="e.g. Basmati Rice 5kg">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Category</label>
+              <select class="form-select" id="prodCategory">
+                <option value="Grocery">Grocery</option>
+                <option value="Beverages">Beverages</option>
+                <option value="Snacks">Snacks</option>
+                <option value="Dairy">Dairy</option>
+                <option value="Personal Care">Personal Care</option>
+                <option value="Household">Household</option>
+                <option value="Stationery">Stationery</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label">Sell Price</label>
+                <input type="number" class="form-control" id="prodPrice" min="0" step="0.01" placeholder="0.00">
+              </div>
+              <div class="col-6">
+                <label class="form-label">Cost Price</label>
+                <input type="number" class="form-control" id="prodCost" min="0" step="0.01" placeholder="0.00">
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Stock Quantity</label>
+              <input type="number" class="form-control" id="prodStock" min="0" value="0" placeholder="0">
+            </div>
+            <button class="btn btn-accent w-100 py-3" id="saveProdBtn">
+              <i class="fas fa-plus me-2"></i>Add Product
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-8">
+        <div class="panel">
+          <div class="panel-header">
+            <h5><i class="fas fa-boxes-stacked me-2" style="color:var(--accent)"></i>Product List</h5>
+            <div class="d-flex gap-2">
+              <input type="text" class="form-control form-control-sm" id="prodSearch" placeholder="Search..." style="width:180px">
+              <span class="badge bg-secondary align-self-center" id="prodCountBadge">0</span>
+            </div>
+          </div>
+          <div class="panel-body p-0">
+            <div class="table-responsive">
+              <table class="table-custom">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Sell</th>
+                    <th>Cost</th>
+                    <th>Margin</th>
+                    <th>Stock</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="prodTableBody">
+                  <tr><td colspan="7"><div class="empty-state"><i class="fas fa-box-open d-block"></i><p>No products added yet</p></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== HISTORY ========== -->
+  <section class="page-section" id="page-history">
+    <div class="panel mb-4">
+      <div class="panel-header">
+        <h5><i class="fas fa-filter me-2" style="color:var(--accent)"></i>Filter</h5>
+      </div>
+      <div class="panel-body">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label">From Date</label>
+            <input type="date" class="form-control" id="histFrom">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">To Date</label>
+            <input type="date" class="form-control" id="histTo">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Type</label>
+            <select class="form-select" id="histType">
+              <option value="all">All</option>
+              <option value="sale">Sales Only</option>
+              <option value="expense">Expenses Only</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <button class="btn btn-accent w-100" id="histFilterBtn">
+              <i class="fas fa-search me-1"></i>Apply
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h5><i class="fas fa-clock-rotate-left me-2" style="color:var(--accent)"></i>Transaction History</h5>
+        <span class="badge bg-secondary" id="histCountBadge">0</span>
+      </div>
+      <div class="panel-body p-0">
+        <div class="table-responsive">
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Payment</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="histTableBody">
+              <tr><td colspan="6"><div class="empty-state"><i class="fas fa-clock d-block"></i><p>No transaction history</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== DAILY REPORT ========== -->
+  <section class="page-section" id="page-report">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <div class="mb-2">
+          <label class="form-label">Report Date</label>
+          <input type="date" class="form-control" id="reportDate" style="width:220px">
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-custom" id="printReportBtn">
+          <i class="fas fa-print me-1"></i>Print Report
+        </button>
+        <button class="btn btn-accent" id="generateReportBtn">
+          <i class="fas fa-sync me-1"></i>Generate
+        </button>
+      </div>
+    </div>
+
+    <div id="reportContent">
+      <div class="print-report" id="printableReport">
+        <h2>Daily Shop Report</h2>
+        <div class="print-date" id="reportDateLabel"></div>
+        <hr class="print-divider">
+
+        <!-- Sales Summary -->
+        <h6 style="font-weight:700;margin-bottom:12px">Sales Summary</h6>
+        <table id="reportSalesTable">
+          <thead>
+            <tr><th>#</th><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="d-flex justify-content-end mb-3" style="font-weight:700">
+          <span>Total Sales: </span>
+          <span id="reportSalesTotal" class="ms-2" style="color:var(--accent)">0.00</span>
+        </div>
+
+        <!-- Expenses Summary -->
+        <h6 style="font-weight:700;margin-bottom:12px">Expenses Summary</h6>
+        <table id="reportExpTable">
+          <thead>
+            <tr><th>#</th><th>Description</th><th>Category</th><th>Amount</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="d-flex justify-content-end mb-3" style="font-weight:700">
+          <span>Total Expenses: </span>
+          <span id="reportExpTotal" class="ms-2" style="color:#dc2626">0.00</span>
+        </div>
+
+        <hr class="print-divider">
+
+        <!-- Net Summary -->
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div style="text-align:center;padding:16px;background:var(--bg-card-alt);border-radius:10px">
+              <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:600">Total Sales</div>
+              <div style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;color:var(--accent)" id="reportNetSales">0.00</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div style="text-align:center;padding:16px;background:var(--bg-card-alt);border-radius:10px">
+              <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:600">Total Expenses</div>
+              <div style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;color:#dc2626" id="reportNetExp">0.00</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div style="text-align:center;padding:16px;background:var(--bg-card-alt);border-radius:10px">
+              <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:600">Net Profit</div>
+              <div style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900" id="reportNetProfit">0.00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /main-content -->
+
+<!-- Edit Product Modal -->
+<div class="modal fade" id="editProductModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" style="font-weight:700">Edit Product</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editProdId">
+        <div class="mb-3">
+          <label class="form-label">Product Name</label>
+          <input type="text" class="form-control" id="editProdName">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Category</label>
+          <select class="form-select" id="editProdCategory">
+            <option value="Grocery">Grocery</option>
+            <option value="Beverages">Beverages</option>
+            <option value="Snacks">Snacks</option>
+            <option value="Dairy">Dairy</option>
+            <option value="Personal Care">Personal Care</option>
+            <option value="Household">Household</option>
+            <option value="Stationery">Stationery</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label">Sell Price</label>
+            <input type="number" class="form-control" id="editProdPrice" min="0" step="0.01">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Cost Price</label>
+            <input type="number" class="form-control" id="editProdCost" min="0" step="0.01">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Stock Quantity</label>
+          <input type="number" class="form-control" id="editProdStock" min="0">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-accent" id="updateProdBtn">Update Product</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body text-center py-4">
+        <i class="fas fa-exclamation-triangle d-block mb-3" style="font-size:2rem;color:#dc2626"></i>
+        <h6 style="font-weight:700" id="confirmDeleteMsg">Are you sure?</h6>
+        <p class="text-muted" style="font-size:0.85rem">This action cannot be undone.</p>
+        <div class="d-flex gap-2 justify-content-center mt-3">
+          <button class="btn btn-outline-custom btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-sm" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:6px 16px;font-weight:600" id="confirmDeleteBtn">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+<script>
+ $(function() {
+  // ========== DATA LAYER ==========
+  const KEYS = { products: 'sc_products', sales: 'sc_sales', expenses: 'sc_expenses' };
+
+  function getData(key) {
+    try { return JSON.parse(localStorage.getItem(key)) || []; }
+    catch { return []; }
+  }
+
+  function setData(key, data) {
+    localStorage.setItem(key, JSON.stringify(data));
+  }
+
+  function todayStr() {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  function timeStr() {
+    return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function formatDate(d) {
+    return new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function currency(n) {
+    return parseFloat(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function genId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+  }
+
+  // Category colors
+  const catColors = {
+    'Grocery': '#c8962e', 'Beverages': '#2563eb', 'Snacks': '#d97706',
+    'Dairy': '#16a34a', 'Personal Care': '#9333ea', 'Household': '#0891b2',
+    'Stationery': '#dc2626', 'Other': '#6b7280',
+    'Rent': '#dc2626', 'Utilities': '#2563eb', 'Supplies': '#d97706',
+    'Transport': '#0891b2', 'Salary': '#9333ea', 'Maintenance': '#16a34a'
+  };
+
+  // ========== TOAST ==========
+  function showToast(msg, type) {
+    type = type || 'success';
+    var icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-times-circle' : 'fa-info-circle';
+    var $t = $('<div class="custom-toast ' + type + '"><i class="fas ' + icon + '"></i>' + msg + '</div>');
+    $('#toastContainer').append($t);
+    setTimeout(function() { $t.fadeOut(300, function() { $t.remove(); }); }, 3000);
+  }
+
+  // ========== NAVIGATION ==========
+  var pageTitles = {
+    dashboard: 'Dashboard', sales: 'New Sale', expenses: 'Expenses',
+    products: 'Products', history: 'Transaction History', report: 'Daily Report'
+  };
+
+  window.navigateTo = function(page) {
+    $('.page-section').removeClass('active');
+    $('#page-' + page).addClass('active');
+    $('.sidebar-nav a').removeClass('active');
+    $('.sidebar-nav a[data-page="' + page + '"]').addClass('active');
+    $('#pageTitle').text(pageTitles[page] || 'Dashboard');
+    // Close mobile sidebar
+    $('#sidebar').removeClass('open');
+    $('#sidebarOverlay').removeClass('show');
+    // Refresh page data
+    if (page === 'dashboard') refreshDashboard();
+    if (page === 'sales') refreshSaleProductDropdown();
+    if (page === 'expenses') renderExpenses();
+    if (page === 'products') renderProducts();
+    if (page === 'history') renderHistory();
+    if (page === 'report') generateReport();
+  };
+
+  $('.sidebar-nav a').on('click', function(e) {
+    e.preventDefault();
+    navigateTo($(this).data('page'));
+  });
+
+  // Mobile sidebar
+  $('#mobileToggle').on('click', function() {
+    $('#sidebar').addClass('open');
+    $('#sidebarOverlay').addClass('show');
+  });
+  $('#sidebarOverlay').on('click', function() {
+    $('#sidebar').removeClass('open');
+    $(this).removeClass('show');
+  });
+
+  // ========== DATE DISPLAY ==========
+  function updateDateDisplay() {
+    var now = new Date();
+    $('#currentDate').text(formatDate(now));
+    $('#shopFooterDate').text(formatDate(now));
+  }
+  updateDateDisplay();
+
+  // ========== PARTICLES ==========
+  (function createParticles() {
+    var container = document.getElementById('particlesBg');
+    for (var i = 0; i < 15; i++) {
+      var p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.animationDuration = (12 + Math.random() * 18) + 's';
+      p.style.animationDelay = Math.random() * 15 + 's';
+      p.style.width = p.style.height = (2 + Math.random() * 4) + 'px';
+      container.appendChild(p);
+    }
+  })();
+
+  // ========== DASHBOARD ==========
+  var weeklyChart, categoryChart;
+
+  function initCharts() {
+    // Weekly chart
+    var ctx1 = document.getElementById('weeklyChart').getContext('2d');
+    weeklyChart = new Chart(ctx1, {
+      type: 'bar',
+      data: { labels: [], datasets: [] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', labels: { font: { family: 'DM Sans', size: 12 }, usePointStyle: true, pointStyle: 'rectRounded', padding: 16 } }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 } } },
+          y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { family: 'DM Sans', size: 11 }, callback: function(v) { return currency(v); } } }
+        }
+      }
+    });
+
+    // Category chart
+    var ctx2 = document.getElementById('categoryChart').getContext('2d');
+    categoryChart = new Chart(ctx2, {
+      type: 'doughnut',
+      data: { labels: [], datasets: [] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { family: 'DM Sans', size: 11 }, usePointStyle: true, pointStyle: 'circle', padding: 10 } }
+        }
+      }
+    });
+  }
+  initCharts();
+
+  function refreshDashboard() {
+    var today = todayStr();
+    var sales = getData(KEYS.sales).filter(function(s) { return s.date === today; });
+    var expenses = getData(KEYS.expenses).filter(function(e) { return e.date === today; });
+    var products = getData(KEYS.products);
+
+    var totalSales = 0, totalExp = 0, totalItems = 0, saleTxCount = 0;
+    sales.forEach(function(s) {
+      totalSales += s.total;
+      saleTxCount++;
+      s.items.forEach(function(it) { totalItems += it.qty; });
+    });
+    expenses.forEach(function(e) { totalExp += e.amount; });
+    var profit = totalSales - totalExp;
+
+    $('#dashSales').text(currency(totalSales)).addClass('pulse-once');
+    $('#dashSalesCount').text(saleTxCount + ' transaction' + (saleTxCount !== 1 ? 's' : ''));
+    $('#dashExpenses').text(currency(totalExp)).addClass('pulse-once');
+    $('#dashExpCount').text(expenses.length + ' entr' + (expenses.length !== 1 ? 'ies' : 'y'));
+    $('#dashProfit').text(currency(profit)).addClass('pulse-once');
+    $('#dashProfit').removeClass('profit-positive profit-negative').addClass(profit >= 0 ? 'profit-positive' : 'profit-negative');
+    $('#dashProfitPct').text(totalSales > 0 ? ((profit / totalSales) * 100).toFixed(1) + '% margin' : '--');
+    $('#dashItems').text(totalItems).addClass('pulse-once');
+    $('#dashProducts').text(products.length + ' products tracked');
+
+    setTimeout(function() { $('.pulse-once').removeClass('pulse-once'); }, 500);
+
+    // Weekly chart data
+    var weekLabels = [], weekSales = [], weekExp = [];
+    for (var i = 6; i >= 0; i--) {
+      var d = new Date(); d.setDate(d.getDate() - i);
+      var ds = d.toISOString().split('T')[0];
+      weekLabels.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
+      var daySales = 0, dayExp = 0;
+      getData(KEYS.sales).filter(function(s) { return s.date === ds; }).forEach(function(s) { daySales += s.total; });
+      getData(KEYS.expenses).filter(function(e) { return e.date === ds; }).forEach(function(e) { dayExp += e.amount; });
+      weekSales.push(daySales);
+      weekExp.push(dayExp);
+    }
+    weeklyChart.data.labels = weekLabels;
+    weeklyChart.data.datasets = [
+      { label: 'Sales', data: weekSales, backgroundColor: 'rgba(200,150,46,0.8)', borderRadius: 6, borderSkipped: false },
+      { label: 'Expenses', data: weekExp, backgroundColor: 'rgba(220,38,38,0.6)', borderRadius: 6, borderSkipped: false }
+    ];
+    weeklyChart.update();
+
+    // Category chart
+    var catMap = {};
+    sales.forEach(function(s) {
+      s.items.forEach(function(it) {
+        if (!catMap[it.category]) catMap[it.category] = 0;
+        catMap[it.category] += it.total;
+      });
+    });
+    var catLabels = Object.keys(catMap);
+    var catValues = catLabels.map(function(k) { return catMap[k]; });
+    var catBg = catLabels.map(function(k) { return catColors[k] || '#6b7280'; });
+    categoryChart.data.labels = catLabels.length ? catLabels : ['No Data'];
+    categoryChart.data.datasets = [{
+      data: catValues.length ? catValues : [1],
+      backgroundColor: catBg.length ? catBg : ['#e5e7eb'],
+      borderWidth: 0
+    }];
+    categoryChart.update();
+
+    // Recent transactions
+    var recent = [];
+    sales.forEach(function(s) {
+      recent.push({ type: 'sale', desc: s.customer || 'Walk-in (' + s.items.map(function(i){return i.name}).join(', ') + ')', amount: s.total, time: s.time, date: s.date });
+    });
+    expenses.forEach(function(e) {
+      recent.push({ type: 'expense', desc: e.description, amount: e.amount, time: e.time, date: e.date });
+    });
+    recent.sort(function(a, b) { return (b.date + b.time).localeCompare(a.date + a.time); });
+    recent = recent.slice(0, 8);
+
+    var $tbody = $('#dashRecentTable');
+    if (recent.length === 0) {
+      $tbody.html('<tr><td colspan="4"><div class="empty-state"><i class="fas fa-inbox d-block"></i><p>No transactions today</p></div></td></tr>');
+    } else {
+      $tbody.html('');
+      recent.forEach(function(r) {
+        var isSale = r.type === 'sale';
+        var badge = isSale
+          ? '<span class="badge-category" style="background:rgba(22,163,74,0.1);color:#16a34a">Sale</span>'
+          : '<span class="badge-category" style="background:rgba(220,38,38,0.1);color:#dc2626">Expense</span>';
+        var amtColor = isSale ? 'color:#16a34a;font-weight:600' : 'color:#dc2626;font-weight:600';
+        var desc = r.desc.length > 40 ? r.desc.substr(0, 40) + '...' : r.desc;
+        $tbody.append('<tr><td>' + badge + '</td><td>' + desc + '</td><td style="' + amtColor + '">' + (isSale ? '+' : '-') + currency(r.amount) + '</td><td style="color:var(--text-muted);font-size:0.82rem">' + r.time + '</td></tr>');
+      });
+    }
+  }
+
+  // ========== PRODUCTS ==========
+  function renderProducts(filter) {
+    var products = getData(KEYS.products);
+    if (filter) {
+      var f = filter.toLowerCase();
+      products = products.filter(function(p) { return p.name.toLowerCase().includes(f) || p.category.toLowerCase().includes(f); });
+    }
+    $('#prodCountBadge').text(products.length);
+    var $tbody = $('#prodTableBody');
+    if (products.length === 0) {
+      $tbody.html('<tr><td colspan="7"><div class="empty-state"><i class="fas fa-box-open d-block"></i><p>No products found</p></div></td></tr>');
+      return;
+    }
+    $tbody.html('');
+    products.forEach(function(p) {
+      var margin = p.price > 0 ? ((p.price - p.cost) / p.price * 100).toFixed(1) : 0;
+      var marginColor = margin > 0 ? '#16a34a' : margin < 0 ? '#dc2626' : '#6b7280';
+      var stockColor = p.stock <= 5 ? '#dc2626' : p.stock <= 15 ? '#d97706' : '#16a34a';
+      var bgCat = catColors[p.category] || '#6b7280';
+      $tbody.append(
+        '<tr>' +
+        '<td style="font-weight:600">' + p.name + '</td>' +
+        '<td><span class="badge-category" style="background:' + bgCat + '22;color:' + bgCat + '">' + p.category + '</span></td>' +
+        '<td>' + currency(p.price) + '</td>' +
+        '<td>' + currency(p.cost) + '</td>' +
+        '<td style="color:' + marginColor + ';font-weight:600">' + margin + '%</td>' +
+        '<td><span style="color:' + stockColor + ';font-weight:700">' + p.stock + '</span>' + (p.stock <= 5 ? ' <i class="fas fa-exclamation-circle" style="color:#dc2626;font-size:0.75rem"></i>' : '') + '</td>' +
+        '<td><div class="d-flex gap-1">' +
+        '<button class="btn btn-outline-custom btn-sm edit-prod-btn" data-id="' + p.id + '" style="padding:4px 10px;font-size:0.75rem"><i class="fas fa-pen"></i></button>' +
+        '<button class="btn btn-danger-custom delete-prod-btn" data-id="' + p.id + '" style="padding:4px 10px;font-size:0.75rem"><i class="fas fa-trash"></i></button>' +
+        '</div></td></tr>'
+      );
+    });
+  }
+
+  // Save product
+  $('#saveProdBtn').on('click', function() {
+    var name = $.trim($('#prodName').val());
+    var category = $('#prodCategory').val();
+    var price = parseFloat($('#prodPrice').val()) || 0;
+    var cost = parseFloat($('#prodCost').val()) || 0;
+    var stock = parseInt($('#prodStock').val()) || 0;
+
+    if (!name) { showToast('Please enter product name', 'error'); return; }
+    if (price <= 0) { showToast('Please enter a valid sell price', 'error'); return; }
+
+    var products = getData(KEYS.products);
+    // Check duplicate
+    var exists = products.find(function(p) { return p.name.toLowerCase() === name.toLowerCase(); });
+    if (exists) { showToast('Product already exists', 'error'); return; }
+
+    products.push({ id: genId(), name: name, category: category, price: price, cost: cost, stock: stock });
+    setData(KEYS.products, products);
+    $('#prodName, #prodPrice, #prodCost, #prodStock').val('');
+    renderProducts();
+    showToast('Product "' + name + '" added successfully');
+  });
+
+  // Search
+  $('#prodSearch').on('input', function() { renderProducts($(this).val()); });
+
+  // Edit product
+  $(document).on('click', '.edit-prod-btn', function() {
+    var id = $(this).data('id');
+    var p = getData(KEYS.products).find(function(x) { return x.id === id; });
+    if (!p) return;
+    $('#editProdId').val(id);
+    $('#editProdName').val(p.name);
+    $('#editProdCategory').val(p.category);
+    $('#editProdPrice').val(p.price);
+    $('#editProdCost').val(p.cost);
+    $('#editProdStock').val(p.stock);
+    new bootstrap.Modal('#editProductModal').show();
+  });
+
+  $('#updateProdBtn').on('click', function() {
+    var id = $('#editProdId').val();
+    var products = getData(KEYS.products);
+    var idx = products.findIndex(function(x) { return x.id === id; });
+    if (idx === -1) return;
+
+    var name = $.trim($('#editProdName').val());
+    if (!name) { showToast('Product name required', 'error'); return; }
+
+    products[idx].name = name;
+    products[idx].category = $('#editProdCategory').val();
+    products[idx].price = parseFloat($('#editProdPrice').val()) || 0;
+    products[idx].cost = parseFloat($('#editProdCost').val()) || 0;
+    products[idx].stock = parseInt($('#editProdStock').val()) || 0;
+    setData(KEYS.products, products);
+    bootstrap.Modal.getInstance('#editProductModal').hide();
+    renderProducts();
+    showToast('Product updated');
+  });
+
+  // Delete product
+  var deleteCallback = null;
+  $(document).on('click', '.delete-prod-btn', function() {
+    var id = $(this).data('id');
+    deleteCallback = function() {
+      var products = getData(KEYS.products).filter(function(x) { return x.id !== id; });
+      setData(KEYS.products, products);
+      renderProducts();
+      showToast('Product deleted', 'info');
+    };
+    $('#confirmDeleteMsg').text('Delete this product?');
+    new bootstrap.Modal('#confirmDeleteModal').show();
+  });
+
+  $('#confirmDeleteBtn').on('click', function() {
+    if (deleteCallback) deleteCallback();
+    deleteCallback = null;
+    bootstrap.Modal.getInstance('#confirmDeleteModal').hide();
+  });
+
+  // ========== SALES ==========
+  function refreshSaleProductDropdown() {
+    var products = getData(KEYS.products);
+    var opts = '<option value="">Select product...</option>';
+    products.forEach(function(p) {
+      if (p.stock > 0) {
+        opts += '<option value="' + p.id + '" data-price="' + p.price + '" data-cat="' + p.category + '" data-stock="' + p.stock + '">' + p.name + ' (Stock: ' + p.stock + ')</option>';
+      }
+    });
+    $('.sale-product').html(opts);
+  }
+
+  // Auto-fill price on product select
+  $(document).on('change', '.sale-product', function() {
+    var $opt = $(this).find(':selected');
+    var price = $opt.data('price') || 0;
+    $(this).closest('.sale-item-row').find('.sale-price').val(price);
+    recalcSaleTotals();
+  });
+
+  // Recalc row totals on qty/price change
+  $(document).on('input', '.sale-qty, .sale-price', function() {
+    recalcSaleTotals();
+  });
+
+  function recalcSaleTotals() {
+    var subtotal = 0;
+    $('.sale-item-row').each(function() {
+      var qty = parseFloat($(this).find('.sale-qty').val()) || 0;
+      var price = parseFloat($(this).find('.sale-price').val()) || 0;
+      var total = qty * price;
+      $(this).find('.sale-total').val(currency(total));
+      subtotal += total;
+    });
+    var discount = parseFloat($('#saleDiscount').val()) || 0;
+    var grand = subtotal - discount;
+    $('#saleSubtotal').text(currency(subtotal));
+    $('#saleGrandTotal').text(currency(grand));
+  }
+
+  $('#saleDiscount').on('input', recalcSaleTotals);
+
+  // Add sale row
+  $('#addSaleRowBtn').on('click', function() {
+    refreshSaleProductDropdown();
+    var $row = $('.sale-item-row:first').clone(true);
+    $row.find('.sale-product').val('');
+    $row.find('.sale-qty').val(1);
+    $row.find('.sale-price').val('');
+    $row.find('.sale-total').val('0.00');
+    $('#saleItemsContainer').append($row);
+    recalcSaleTotals();
+  });
+
+  // Remove sale row
+  $(document).on('click', '.remove-sale-row', function() {
+    if ($('.sale-item-row').length > 1) {
+      $(this).closest('.sale-item-row').remove();
+      recalcSaleTotals();
+    } else {
+      showToast('Need at least one item', 'error');
+    }
+  });
+
+  // Save sale
+  $('#saveSaleBtn').on('click', function() {
+    var items = [];
+    var valid = true;
+    var products = getData(KEYS.products);
+
+    $('.sale-item-row').each(function() {
+      var prodId = $(this).find('.sale-product').val();
+      var qty = parseInt($(this).find('.sale-qty').val()) || 0;
+      var price = parseFloat($(this).find('.sale-price').val()) || 0;
+
+      if (!prodId) { valid = false; return; }
+      if (qty <= 0) { valid = false; return; }
+
+      var prod = products.find(function(p) { return p.id === prodId; });
+      if (!prod) { valid = false; return; }
+      if (qty > prod.stock) {
+        showToast('Insufficient stock for ' + prod.name + ' (Available: ' + prod.stock + ')', 'error');
+        valid = false;
+        return;
+      }
+
+      items.push({
+        productId: prodId,
+        name: prod.name,
+        category: prod.category,
+        qty: qty,
+        price: price,
+        total: qty * price,
+        costPrice: prod.cost
+      });
+    });
+
+    if (!valid || items.length === 0) {
+      if (items.length === 0) showToast('Please add at least one item', 'error');
+      return;
+    }
+
+    var subtotal = items.reduce(function(s, i) { return s + i.total; }, 0);
+    var discount = parseFloat($('#saleDiscount').val()) || 0;
+    var grandTotal = subtotal - discount;
+
+    if (grandTotal < 0) { showToast('Discount cannot exceed subtotal', 'error'); return; }
+
+    var sale = {
+      id: genId(),
+      date: todayStr(),
+      time: timeStr(),
+      customer: $.trim($('#saleCustomer').val()) || 'Walk-in',
+      payment: $('#salePayment').val(),
+      items: items,
+      subtotal: subtotal,
+      discount: discount,
+      total: grandTotal
+    };
+
+    var sales = getData(KEYS.sales);
+    sales.push(sale);
+    setData(KEYS.sales, sales);
+
+    // Update stock
+    items.forEach(function(it) {
+      var pidx = products.findIndex(function(p) { return p.id === it.productId; });
+      if (pidx !== -1) {
+        products[pidx].stock -= it.qty;
+      }
+    });
+    setData(KEYS.products, products);
+
+    // Reset form
+    var $first = $('.sale-item-row:first');
+    $first.find('.sale-product').val('');
+    $first.find('.sale-qty').val(1);
+    $first.find('.sale-price').val('');
+    $first.find('.sale-total').val('0.00');
+    $('.sale-item-row:not(:first)').remove();
+    $('#saleDiscount').val(0);
+    $('#saleCustomer').val('');
+    recalcSaleTotals();
+    refreshSaleProductDropdown();
+
+    showToast('Sale completed! Total: ' + currency(grandTotal));
+  });
+
+  // ========== EXPENSES ==========
+  function renderExpenses() {
+    var today = todayStr();
+    var expenses = getData(KEYS.expenses).filter(function(e) { return e.date === today; });
+    $('#expCountBadge').text(expenses.length);
+    var $tbody = $('#expTableBody');
+    if (expenses.length === 0) {
+      $tbody.html('<tr><td colspan="5"><div class="empty-state"><i class="fas fa-receipt d-block"></i><p>No expenses recorded today</p></div></td></tr>');
+      return;
+    }
+    $tbody.html('');
+    expenses.forEach(function(e) {
+      var bgCat = catColors[e.category] || '#6b7280';
+      $tbody.append(
+        '<tr>' +
+        '<td style="font-weight:500">' + e.description + '</td>' +
+        '<td><span class="badge-category" style="background:' + bgCat + '22;color:' + bgCat + '">' + e.category + '</span></td>' +
+        '<td style="color:#dc2626;font-weight:600">' + currency(e.amount) + '</td>' +
+        '<td style="color:var(--text-muted);font-size:0.82rem">' + e.time + '</td>' +
+        '<td><button class="btn btn-danger-custom delete-exp-btn" data-id="' + e.id + '"><i class="fas fa-trash me-1"></i>Delete</button></td></tr>'
+      );
+    });
+  }
+
+  $('#saveExpBtn').on('click', function() {
+    var desc = $.trim($('#expDesc').val());
+    var amount = parseFloat($('#expAmount').val()) || 0;
+    var category = $('#expCategory').val();
+
+    if (!desc) { showToast('Please enter a description', 'error'); return; }
+    if (amount <= 0) { showToast('Please enter a valid amount', 'error'); return; }
+
+    var expenses = getData(KEYS.expenses);
+    expenses.push({ id: genId(), date: todayStr(), time: timeStr(), description: desc, amount: amount, category: category });
+    setData(KEYS.expenses, expenses);
+
+    $('#expDesc, #expAmount').val('');
+    renderExpenses();
+    showToast('Expense of ' + currency(amount) + ' added');
+  });
+
+  $(document).on('click', '.delete-exp-btn', function() {
+    var id = $(this).data('id');
+    deleteCallback = function() {
+      var expenses = getData(KEYS.expenses).filter(function(x) { return x.id !== id; });
+      setData(KEYS.expenses, expenses);
+      renderExpenses();
+      showToast('Expense deleted', 'info');
+    };
+    $('#confirmDeleteMsg').text('Delete this expense?');
+    new bootstrap.Modal('#confirmDeleteModal').show();
+  });
+
+  // ========== HISTORY ==========
+  function renderHistory() {
+    var from = $('#histFrom').val();
+    var to = $('#histTo').val();
+    var type = $('#histType').val();
+
+    var allTx = [];
+
+    var sales = getData(KEYS.sales);
+    if (type === 'all' || type === 'sale') {
+      sales.forEach(function(s) {
+        if (from && s.date < from) return;
+        if (to && s.date > to) return;
+        allTx.push({ date: s.date, time: s.time, type: 'sale', desc: s.customer + ' — ' + s.items.map(function(i){return i.name + ' x' + i.qty}).join(', '), amount: s.total, payment: s.payment, id: s.id });
+      });
+    }
+
+    var expenses = getData(KEYS.expenses);
+    if (type === 'all' || type === 'expense') {
+      expenses.forEach(function(e) {
+        if (from && e.date < from) return;
+        if (to && e.date > to) return;
+        allTx.push({ date: e.date, time: e.time, type: 'expense', desc: e.description + ' (' + e.category + ')', amount: e.amount, payment: '-', id: e.id });
+      });
+    }
+
+    allTx.sort(function(a, b) { return (b.date + b.time).localeCompare(a.date + a.time); });
+    $('#histCountBadge').text(allTx.length);
+
+    var $tbody = $('#histTableBody');
+    if (allTx.length === 0) {
+      $tbody.html('<tr><td colspan="6"><div class="empty-state"><i class="fas fa-clock d-block"></i><p>No transactions found</p></div></td></tr>');
+      return;
+    }
+    $tbody.html('');
+    allTx.forEach(function(tx) {
+      var isSale = tx.type === 'sale';
+      var badge = isSale
+        ? '<span class="badge-category" style="background:rgba(22,163,74,0.1);color:#16a34a">Sale</span>'
+        : '<span class="badge-category" style="background:rgba(220,38,38,0.1);color:#dc2626">Expense</span>';
+      var amtColor = isSale ? 'color:#16a34a;font-weight:600' : 'color:#dc2626;font-weight:600';
+      var desc = tx.desc.length > 50 ? tx.desc.substr(0, 50) + '...' : tx.desc;
+      var delBtn = isSale
+        ? '<button class="btn btn-danger-custom delete-sale-hist-btn" data-id="' + tx.id + '" style="padding:4px 10px;font-size:0.72rem"><i class="fas fa-trash"></i></button>'
+        : '<button class="btn btn-danger-custom delete-exp-hist-btn" data-id="' + tx.id + '" style="padding:4px 10px;font-size:0.72rem"><i class="fas fa-trash"></i></button>';
+
+      $tbody.append('<tr><td style="font-size:0.82rem;white-space:nowrap">' + formatDate(tx.date) + '</td><td>' + badge + '</td><td style="font-size:0.85rem">' + desc + '</td><td style="' + amtColor + '">' + (isSale ? '+' : '-') + currency(tx.amount) + '</td><td style="font-size:0.82rem;color:var(--text-muted)">' + tx.payment + '</td><td>' + delBtn + '</td></tr>');
+    });
+  }
+
+  $('#histFilterBtn').on('click', renderHistory);
+
+  // Delete from history
+  $(document).on('click', '.delete-sale-hist-btn', function() {
+    var id = $(this).data('id');
+    deleteCallback = function() {
+      var sales = getData(KEYS.sales).filter(function(x) { return x.id !== id; });
+      setData(KEYS.sales, sales);
+      renderHistory();
+      showToast('Sale deleted', 'info');
+    };
+    $('#confirmDeleteMsg').text('Delete this sale record?');
+    new bootstrap.Modal('#confirmDeleteModal').show();
+  });
+
+  $(document).on('click', '.delete-exp-hist-btn', function() {
+    var id = $(this).data('id');
+    deleteCallback = function() {
+      var expenses = getData(KEYS.expenses).filter(function(x) { return x.id !== id; });
+      setData(KEYS.expenses, expenses);
+      renderHistory();
+      showToast('Expense deleted', 'info');
+    };
+    $('#confirmDeleteMsg').text('Delete this expense record?');
+    new bootstrap.Modal('#confirmDeleteModal').show();
+  });
+
+  // ========== DAILY REPORT ==========
+  function generateReport() {
+    var date = $('#reportDate').val() || todayStr();
+    $('#reportDate').val(date);
+    $('#reportDateLabel').text(formatDate(date));
+
+    var sales = getData(KEYS.sales).filter(function(s) { return s.date === date; });
+    var expenses = getData(KEYS.expenses).filter(function(e) { return e.date === date; });
+
+    // Sales table
+    var $sTbody = $('#reportSalesTable tbody');
+    $sTbody.html('');
+    var salesTotal = 0, idx = 1;
+    sales.forEach(function(s) {
+      s.items.forEach(function(it) {
+        $sTbody.append('<tr><td>' + idx++ + '</td><td>' + it.name + '</td><td>' + it.qty + '</td><td>' + currency(it.price) + '</td><td style="font-weight:600">' + currency(it.total) + '</td></tr>');
+        salesTotal += it.total;
+      });
+    });
+    if (idx === 1) $sTbody.html('<tr><td colspan="5" style="text-align:center;color:#999;padding:20px">No sales</td></tr>');
+    $('#reportSalesTotal').text(currency(salesTotal));
+
+    // Expenses table
+    var $eTbody = $('#reportExpTable tbody');
+    $eTbody.html('');
+    var expTotal = 0;
+    idx = 1;
+    expenses.forEach(function(e) {
+      $eTbody.append('<tr><td>' + idx++ + '</td><td>' + e.description + '</td><td>' + e.category + '</td><td style="font-weight:600">' + currency(e.amount) + '</td></tr>');
+      expTotal += e.amount;
+    });
+    if (idx === 1) $eTbody.html('<tr><td colspan="4" style="text-align:center;color:#999;padding:20px">No expenses</td></tr>');
+    $('#reportExpTotal').text(currency(expTotal));
+
+    // Net
+    var net = salesTotal - expTotal;
+    $('#reportNetSales').text(currency(salesTotal));
+    $('#reportNetExp').text(currency(expTotal));
+    $('#reportNetProfit').text(currency(net));
+    $('#reportNetProfit').css('color', net >= 0 ? '#16a34a' : '#dc2626');
+  }
+
+  $('#generateReportBtn').on('click', generateReport);
+  $('#reportDate').on('change', generateReport);
+
+  // Print
+  $('#printReportBtn').on('click', function() {
+    var content = document.getElementById('printableReport');
+    var win = window.open('', '_blank', 'width=800,height=600');
+    win.document.write('<!DOCTYPE html><html><head><title>Daily Report</title>');
+    win.document.write('<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">');
+    win.document.write('<style>body{font-family:"DM Sans",sans-serif;padding:40px;color:#1a1a1a}h2{font-family:"Playfair Display",serif}table{width:100%;border-collapse:collapse;margin:12px 0}th,td{padding:8px 12px;border:1px solid #ddd;font-size:0.85rem}th{background:#f5f5f5;font-weight:600}.total-row{font-weight:700}hr{border:none;border-top:2px solid #c8962e;margin:16px 0}.summary-box{text-align:center;padding:16px;background:#faf8f4;border-radius:8px;display:inline-block;margin:8px;min-width:180px}.summary-box .label{font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600}.summary-box .value{font-family:"Playfair Display",serif;font-size:1.5rem;font-weight:900;margin-top:4px}</style>');
+    win.document.write('</head><body>');
+    win.document.write(content.innerHTML);
+    // Add summary boxes after hr
+    win.document.write('<div style="text-align:center;margin-top:16px">');
+    win.document.write('<div class="summary-box"><div class="label">Total Sales</div><div class="value" style="color:#c8962e">' + currency(salesTotal) + '</div></div>');
+    win.document.write('<div class="summary-box"><div class="label">Total Expenses</div><div class="value" style="color:#dc2626">' + currency(expTotal) + '</div></div>');
+    win.document.write('<div class="summary-box"><div class="label">Net Profit</div><div class="value" style="color:' + (net >= 0 ? '#16a34a' : '#dc2626') + '">' + currency(net) + '</div></div>');
+    win.document.write('</div>');
+    win.document.write('</body></html>');
+    win.document.close();
+    setTimeout(function() { win.print(); }, 500);
+  });
+
+  // ========== SEED DEMO DATA ==========
+  function seedDemoData() {
+    if (localStorage.getItem('sc_seeded')) return;
+
+    var products = [
+      { id: genId(), name: 'Basmati Rice 5kg', category: 'Grocery', price: 450, cost: 380, stock: 30 },
+      { id: genId(), name: 'Toor Dal 1kg', category: 'Grocery', price: 120, cost: 90, stock: 50 },
+      { id: genId(), name: 'Amul Butter 500g', category: 'Dairy', price: 270, cost: 230, stock: 20 },
+      { id: genId(), name: 'Coca-Cola 2L', category: 'Beverages', price: 85, cost: 65, stock: 40 },
+      { id: genId(), name: 'Lays Classic 150g', category: 'Snacks', price: 40, cost: 28, stock: 60 },
+      { id: genId(), name: 'Surf Excel 1kg', category: 'Household', price: 195, cost: 155, stock: 25 },
+      { id: genId(), name: 'Colgate 150g', category: 'Personal Care', price: 98, cost: 72, stock: 35 },
+      { id: genId(), name: 'Notebook 200pg', category: 'Stationery', price: 45, cost: 30, stock: 80 },
+      { id: genId(), name: 'Maggi Noodles (6pk)', category: 'Grocery', price: 84, cost: 60, stock: 45 },
+      { id: genId(), name: 'Tata Salt 1kg', category: 'Grocery', price: 28, cost: 20, stock: 100 }
+    ];
+    setData(KEYS.products, products);
+
+    // Generate some past sales
+    var sales = [];
+    for (var d = 6; d >= 0; d--) {
+      var date = new Date(); date.setDate(date.getDate() - d);
+      var ds = date.toISOString().split('T')[0];
+      var numSales = Math.floor(Math.random() * 4) + 1;
+      for (var s = 0; s < numSales; s++) {
+        var numItems = Math.floor(Math.random() * 3) + 1;
+        var items = [];
+        var usedIdx = {};
+        for (var it = 0; it < numItems; it++) {
+          var pidx;
+          do { pidx = Math.floor(Math.random() * products.length); } while (usedIdx[pidx]);
+          usedIdx[pidx] = true;
+          var p = products[pidx];
+          var qty = Math.floor(Math.random() * 5) + 1;
+          items.push({ productId: p.id, name: p.name, category: p.category, qty: qty, price: p.price, total: qty * p.price, costPrice: p.cost });
+        }
+        var subtotal = items.reduce(function(s, i) { return s + i.total; }, 0);
+        var hours = 8 + Math.floor(Math.random() * 12);
+        var mins = Math.floor(Math.random() * 60);
+        var timeStr = (hours < 10 ? '0' : '') + hours + ':' + (mins < 10 ? '0' : '') + mins;
+        var customers = ['Rahul Sharma', 'Priya Patel', 'Amit Kumar', 'Sunita Devi', 'Walk-in'];
+        var payments = ['Cash', 'Card', 'UPI', 'Cash'];
+        sales.push({
+          id: genId(), date: ds, time: timeStr,
+          customer: customers[Math.floor(Math.random() * customers.length)],
+          payment: payments[Math.floor(Math.random() * payments.length)],
+          items: items, subtotal: subtotal, discount: 0, total: subtotal
+        });
+      }
+    }
+    setData(KEYS.sales, sales);
+
+    // Generate some past expenses
+    var expData = [
+      { desc: 'Shop rent', cat: 'Rent', amt: 8000 },
+      { desc: 'Electricity bill', cat: 'Utilities', amt: 3200 },
+      { desc: 'Gas cylinder refill', cat: 'Utilities', amt: 900 },
+      { desc: 'Delivery transport', cat: 'Transport', amt: 500 },
+      { desc: 'Cleaning supplies', cat: 'Supplies', amt: 350 },
+      { desc: 'Helper salary', cat: 'Salary', amt: 6000 },
+      { desc: 'Water bill', cat: 'Utilities', amt: 450 }
+    ];
+    var expenses = [];
+    for (var ed = 6; ed >= 0; ed--) {
+      var edate = new Date(); edate.setDate(edate.getDate() - ed);
+      var eds = edate.toISOString().split('T')[0];
+      // Add 1-2 random expenses per day
+      var numExp = Math.floor(Math.random() * 2) + 1;
+      var shuffled = expData.slice().sort(function() { return 0.5 - Math.random(); });
+      for (var ei = 0; ei < numExp && ei < shuffled.length; ei++) {
+        var e = shuffled[ei];
+        var eHours = 9 + Math.floor(Math.random() * 10);
+        var eMins = Math.floor(Math.random() * 60);
+        var eTime = (eHours < 10 ? '0' : '') + eHours + ':' + (eMins < 10 ? '0' : '') + eMins;
+        expenses.push({ id: genId(), date: eds, time: eTime, description: e.desc, amount: e.amt, category: e.cat });
+      }
+    }
+    setData(KEYS.expenses, expenses);
+    localStorage.setItem('sc_seeded', 'true');
+  }
+
+  // ========== INIT ==========
+  seedDemoData();
+  refreshDashboard();
+  refreshSaleProductDropdown();
+
+  // Set default dates for history and report
+  var today = todayStr();
+  var weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+  $('#histFrom').val(weekAgo.toISOString().split('T')[0]);
+  $('#histTo').val(today);
+  $('#reportDate').val(today);
+});
+</script>
+</body>
+</html>
